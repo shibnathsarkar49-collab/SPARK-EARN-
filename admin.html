@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SPARK EARN — Admin Panel</title>
+
+<!-- Firebase -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import {
+    getFirestore, doc, getDoc, setDoc, updateDoc, collection,
+    getDocs, addDoc, deleteDoc
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  // =============================================
+  // 🔥 REPLACE WITH YOUR FIREBASE CONFIG
+  // =============================================
+  const firebaseConfig = {
+    apiKey: "AIzaSyA27aRZi9dI5tPgnmVE0w8yHgvMcKIEAGE",
+    authDomain: "spark-earn-2229e.firebaseapp.com",
+    databaseURL: "https://spark-earn-2229e-default-rtdb.firebaseio.com",
+    projectId: "spark-earn-2229e",
+    storageBucket: "spark-earn-2229e.firebasestorage.app",
+    messagingSenderId: "491384055560",
+    appId: "1:491384055560:web:912204706cb5148bd22ebd",
+    measurementId: "G-0V3BKVP9MT"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
+  window._db         = db;
+  window._doc        = doc;
+  window._getDoc     = getDoc;
+  window._setDoc     = setDoc;
+  window._updateDoc  = updateDoc;
+  window._collection = collection;
+  window._getDocs    = getDocs;
+  window._addDoc     = addDoc;
+  window._deleteDoc  = deleteDoc;
+  window.dispatchEvent(new Event("firebase-ready"));
+</script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+:root{
+  --bg:#07080d;--s1:#0e1018;--s2:#151720;--s3:#1e2030;
+  --border:rgba(255,255,255,0.07);
+  --accent:#6c63ff;--green:#00e5a0;--yellow:#ffd166;
+  --red:#ff5470;--orange:#ff8c42;--blue:#4cc9f0;
+  --text:#eef0ff;--text2:#8890b0;--text3:#4a5070;
+  --r:14px;--rsm:8px;--sidebar:240px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--s3);border-radius:4px}
+
+/* LAYOUT */
+#wrap{display:flex;min-height:100vh;overflow-x:hidden;max-width:100vw}
+
+/* MAIN */
+.main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;min-height:100vh;min-width:0;max-width:calc(100vw - var(--sidebar))}
+
+/* TOPBAR */
+.topbar{background:var(--s1);border-bottom:1px solid var(--border);padding:0 16px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;overflow:hidden}
+.tb-left{display:flex;align-items:center;gap:12px;min-width:0;flex:1}
+.hamburger{display:none;flex-direction:column;gap:4px;cursor:pointer;padding:6px;flex-shrink:0}
+.hline{width:18px;height:2px;background:var(--text2);border-radius:2px}
+.pg-title{font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.tb-btn{padding:7px 12px;border-radius:var(--rsm);background:var(--s2);border:1px solid var(--border);color:var(--text2);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:.15s;white-space:nowrap}
+.tb-btn:hover{background:var(--s3);color:var(--text)}
+.tb-btn.accent{background:rgba(108,99,255,.15);border-color:rgba(108,99,255,.3);color:var(--accent)}
+.tb-icon-btn{width:34px;height:34px;padding:0;display:flex;align-items:center;justify-content:center;font-size:15px;border-radius:var(--rsm)}
+.live-row{display:flex;align-items:center;gap:6px;padding:6px 10px;background:rgba(0,229,160,.06);border:1px solid rgba(0,229,160,.15);border-radius:var(--rsm);flex-shrink:0}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.live-lbl{font-size:11px;color:var(--green);font-weight:600}
+
+/* CONTENT */
+.content{flex:1;padding:22px;overflow-y:auto;overflow-x:hidden;width:100%;max-width:100%}
+.pg-sec{display:none;animation:pgIn .22s ease}
+.pg-sec.active{display:block}
+@keyframes pgIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* SIDEBAR */
+.sidebar{width:var(--sidebar);flex-shrink:0;background:var(--s1);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;left:0;top:0;height:100vh;z-index:100;transition:transform .3s ease}
+.sb-brand{padding:22px 20px 18px;border-bottom:1px solid var(--border)}
+.sb-logo{font-size:18px;font-weight:700;letter-spacing:1.5px}
+.sb-logo span{color:var(--accent)}
+.sb-sub{font-size:10px;color:var(--text3);margin-top:3px;text-transform:uppercase;letter-spacing:.5px}
+.sb-nav{flex:1;overflow-y:auto;padding:10px 10px}
+.sb-grp{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;padding:10px 10px 5px;font-weight:600}
+.sb-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--rsm);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;color:var(--text2);margin-bottom:2px}
+.sb-item:hover{background:var(--s2);color:var(--text)}
+.sb-item.active{background:rgba(108,99,255,.15);color:var(--accent);border:1px solid rgba(108,99,255,.2)}
+.sb-ico{width:18px;text-align:center;font-size:15px}
+.sb-badge{margin-left:auto;background:var(--red);color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:20px}
+.sb-foot{padding:16px 14px;border-top:1px solid var(--border)}
+.sb-admin{display:flex;align-items:center;gap:10px}
+.sb-av{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--blue));display:flex;align-items:center;justify-content:center;font-size:14px}
+.sb-aname{font-size:12px;font-weight:600}
+.sb-arole{font-size:10px;color:var(--green)}
+
+/* STAT GRID */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;margin-bottom:24px;width:100%}
+.sc{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:18px;position:relative;overflow:hidden;transition:border-color .2s}
+.sc:hover{border-color:rgba(255,255,255,.12)}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.sc.gr::before{background:linear-gradient(90deg,var(--green),transparent)}
+.sc.pu::before{background:linear-gradient(90deg,var(--accent),transparent)}
+.sc.ye::before{background:linear-gradient(90deg,var(--yellow),transparent)}
+.sc.re::before{background:linear-gradient(90deg,var(--red),transparent)}
+.sc.bl::before{background:linear-gradient(90deg,var(--blue),transparent)}
+.sc.or::before{background:linear-gradient(90deg,var(--orange),transparent)}
+.sc-ico{font-size:22px;margin-bottom:10px}
+.sc-val{font-size:26px;font-weight:700;font-family:'DM Mono',monospace;margin-bottom:4px}
+.sc-lbl{font-size:11px;color:var(--text2);font-weight:500}
+
+/* SEC HEADER */
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px}
+.sec-ttl{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
+.sec-ttl span{font-size:18px}
+
+/* TABLE */
+.tbl-wrap{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:20px}
+.tbl-filters{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.f-input{background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:7px 12px;color:var(--text);font-family:'Space Grotesk',sans-serif;font-size:12px;outline:none;flex:1;min-width:140px}
+.f-input:focus{border-color:var(--accent)}
+.f-sel{background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:7px 10px;color:var(--text);font-family:'Space Grotesk',sans-serif;font-size:12px;outline:none;cursor:pointer}
+table{width:100%;border-collapse:collapse}
+th{padding:10px 16px;font-size:11px;font-weight:600;color:var(--text3);text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;text-transform:uppercase;letter-spacing:.5px}
+td{padding:11px 16px;font-size:12px;border-bottom:1px solid rgba(255,255,255,.03);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,.015)}
+.mono{font-family:'DM Mono',monospace;font-size:11px}
+.bold{font-weight:700}
+
+/* BADGES */
+.bdg{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;white-space:nowrap}
+.bdg.pending {background:rgba(255,209,102,.15);color:var(--yellow);border:1px solid rgba(255,209,102,.3)}
+.bdg.approved,.bdg.sent,.bdg.active{background:rgba(0,229,160,.12);color:var(--green);border:1px solid rgba(0,229,160,.25)}
+.bdg.rejected,.bdg.blocked{background:rgba(255,84,112,.12);color:var(--red);border:1px solid rgba(255,84,112,.25)}
+.bdg.upi {background:rgba(76,201,240,.1);color:var(--blue);border:1px solid rgba(76,201,240,.2)}
+.bdg.bank{background:rgba(108,99,255,.1);color:var(--accent);border:1px solid rgba(108,99,255,.2)}
+.bdg.online{background:rgba(0,229,160,.1);color:var(--green)}
+
+/* ACTION BTNS */
+.ab{padding:5px 11px;border-radius:6px;border:none;font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:600;cursor:pointer;transition:.15s}
+.ab.ok {background:rgba(0,229,160,.15);color:var(--green);border:1px solid rgba(0,229,160,.25)}
+.ab.ok:hover{background:rgba(0,229,160,.25)}
+.ab.no {background:rgba(255,84,112,.12);color:var(--red);border:1px solid rgba(255,84,112,.25)}
+.ab.no:hover{background:rgba(255,84,112,.22)}
+.ab.vw {background:var(--s2);color:var(--text2);border:1px solid var(--border)}
+.ab.vw:hover{color:var(--text)}
+.ab.pu {background:rgba(108,99,255,.15);color:var(--accent);border:1px solid rgba(108,99,255,.3)}
+
+/* FORM CARD */
+.fc{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:16px}
+.fc-ttl{font-size:13px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-grid.s1{grid-template-columns:1fr}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fg label{font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px}
+.fg input,.fg textarea,.fg select{background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:10px 12px;color:var(--text);font-family:'Space Grotesk',sans-serif;font-size:13px;outline:none;transition:border-color .2s}
+.fg input:focus,.fg textarea:focus,.fg select:focus{border-color:var(--accent)}
+.fg textarea{resize:vertical;min-height:90px;line-height:1.6}
+.hint{font-size:10px;color:var(--text3);margin-top:3px}
+
+/* SUBMIT */
+.sbtn{padding:11px 22px;border-radius:var(--rsm);border:none;background:linear-gradient(135deg,var(--accent),var(--blue));color:#fff;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:.2s;box-shadow:0 4px 16px rgba(108,99,255,.25)}
+.sbtn:hover{transform:translateY(-1px)}
+.sbtn:active{transform:none}
+.sbtn:disabled{background:var(--s3);color:var(--text3);box-shadow:none;cursor:not-allowed;transform:none}
+
+/* BROADCAST TAG */
+.bc-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.bc-tag{padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:var(--s2);font-size:11px;font-weight:600;cursor:pointer;color:var(--text2);transition:.15s}
+.bc-tag:hover,.bc-tag.on{background:rgba(108,99,255,.15);border-color:var(--accent);color:var(--accent)}
+
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:500;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:20px}
+.modal-bg.open{display:flex}
+.modal{background:var(--s1);border:1px solid var(--border);border-radius:20px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;animation:popIn .2s ease}
+@keyframes popIn{from{transform:scale(.95);opacity:0}to{transform:scale(1);opacity:1}}
+.modal-hd{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--border)}
+.modal-hd-ttl{font-size:15px;font-weight:700}
+.modal-x{width:28px;height:28px;border-radius:50%;background:var(--s2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;color:var(--text2)}
+.modal-bd{padding:20px}
+.mrow{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.mrow:last-child{border-bottom:none}
+.mrow-lbl{font-size:11px;color:var(--text2)}
+.mrow-val{font-size:12px;font-weight:600;font-family:'DM Mono',monospace;word-break:break-all;text-align:right;max-width:62%}
+.ud-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.ud-c{background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:12px}
+.ud-l{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.ud-v{font-size:15px;font-weight:700;font-family:'DM Mono',monospace}
+.ud-v.gr{color:var(--green)}.ud-v.ye{color:var(--yellow)}.ud-v.re{color:var(--red)}
+
+/* TOAST */
+#toast-wrap{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+.toast{padding:12px 18px;border-radius:10px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;animation:tIn .25s ease;box-shadow:0 8px 24px rgba(0,0,0,.4);min-width:200px;max-width:300px}
+@keyframes tIn{from{transform:translateX(110%);opacity:0}to{transform:translateX(0);opacity:1}}
+.toast.ok {background:#0e2b1e;border:1px solid rgba(0,229,160,.3);color:var(--green)}
+.toast.err{background:#2b0e14;border:1px solid rgba(255,84,112,.3);color:var(--red)}
+.toast.inf{background:#131228;border:1px solid rgba(108,99,255,.3);color:var(--accent)}
+
+/* LOGIN */
+#login{position:fixed;inset:0;z-index:1000;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px}
+.login-box{background:var(--s1);border:1px solid var(--border);border-radius:20px;padding:36px 28px;width:100%;max-width:380px;text-align:center}
+.l-logo{font-size:32px;font-weight:700;letter-spacing:2px;margin-bottom:4px}
+.l-logo span{color:var(--accent)}
+.l-sub{font-size:12px;color:var(--text3);margin-bottom:28px}
+.l-inp{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:11px 14px;color:var(--text);font-family:'Space Grotesk',sans-serif;font-size:14px;outline:none;margin-bottom:14px;transition:.2s}
+.l-inp:focus{border-color:var(--accent)}
+.l-btn{width:100%;padding:13px;border-radius:var(--rsm);border:none;background:linear-gradient(135deg,var(--accent),var(--blue));color:#fff;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;cursor:pointer}
+.l-err{color:var(--red);font-size:12px;margin-top:10px}
+
+/* TERMS EDITOR */
+.tblk{background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);margin-bottom:10px;overflow:hidden}
+.tblk-hd{display:flex;align-items:center;gap:10px;padding:12px 14px}
+.tblk-input{background:none;border:none;font-size:13px;font-weight:600;color:var(--text);flex:1;outline:none;font-family:'Space Grotesk',sans-serif}
+.tblk-ta{width:100%;background:var(--s2);border:none;border-top:1px solid var(--border);padding:14px;color:var(--text);font-family:'Space Grotesk',sans-serif;font-size:13px;resize:vertical;min-height:100px;outline:none;line-height:1.7}
+
+/* EMPTY */
+.empty{text-align:center;padding:36px 20px;color:var(--text3)}
+.empty .ei{font-size:34px;margin-bottom:8px}
+.empty p{font-size:12px}
+
+/* OVERLAY */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99;display:none}
+.overlay.show{display:block}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+  :root{--sidebar:260px}
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .main{margin-left:0 !important;max-width:100vw !important}
+  .hamburger{display:flex}
+  .stat-grid{grid-template-columns:1fr 1fr !important;gap:10px}
+  .sc{padding:14px}
+  .sc-val{font-size:20px}
+  .sc-ico{font-size:18px;margin-bottom:7px}
+  .form-grid{grid-template-columns:1fr !important}
+  .tbl-wrap{overflow:hidden}
+  .tbl-wrap table{display:block;width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  th,td{padding:9px 11px;font-size:11px}
+  .content{padding:12px}
+  .sec-hdr{gap:6px}
+  .sec-ttl{font-size:13px}
+  .tbl-filters{padding:10px 12px;gap:8px}
+  .f-input{min-width:0;font-size:11px}
+  .fc{padding:14px}
+  .modal-bg{padding:0;align-items:flex-end}
+  .modal{border-radius:20px 20px 0 0;max-height:88vh}
+  .ud-grid{grid-template-columns:1fr 1fr}
+  #toast-wrap{bottom:16px;right:10px;left:10px}
+  .toast{min-width:0;max-width:100%}
+  .sbtn{font-size:12px;padding:10px 16px}
+  .live-lbl{font-size:10px}
+  .pg-title{font-size:14px}
+}
+@media(max-width:400px){
+  .stat-grid{grid-template-columns:1fr 1fr !important;gap:8px}
+  .sc-val{font-size:17px}
+  .sc-lbl{font-size:10px}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login">
+  <div class="login-box">
+    <div class="l-logo">SPARK EARN</div>
+    <div class="l-sub">Admin Control Panel</div>
+    <input type="password" class="l-inp" id="l-pass" placeholder="Enter admin password" onkeydown="if(event.key==='Enter')doLogin()"/>
+    <button class="l-btn" onclick="doLogin()">Sign In →</button>
+    <div class="l-err" id="l-err"></div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay" onclick="closeSb()"></div>
+<div id="toast-wrap"></div>
+
+<div id="wrap" style="display:none">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo">SPARK EARN</div>
+      <div class="sb-sub">Admin Panel</div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-grp">Overview</div>
+      <div class="sb-item active" onclick="goPage('dashboard',this)"><span class="sb-ico">📊</span>Dashboard</div>
+      <div class="sb-item" onclick="goPage('users',this)"><span class="sb-ico">👥</span>All Users</div>
+
+      <div class="sb-grp">Transactions</div>
+      <div class="sb-item" onclick="goPage('withdrawals',this)">
+        <span class="sb-ico">💸</span>Withdrawals
+        <span class="sb-badge" id="wd-badge" style="display:none">0</span>
+      </div>
+      <div class="sb-item" onclick="goPage('giftcards',this)">
+        <span class="sb-ico">🎮</span>Gift Card Orders
+        <span class="sb-badge" id="gc-badge" style="display:none">0</span>
+      </div>
+
+      <div class="sb-grp">Content</div>
+      <div class="sb-item" onclick="goPage('broadcast',this)"><span class="sb-ico">📢</span>Broadcast</div>
+      <div class="sb-item" onclick="goPage('support',this)"><span class="sb-ico">🎧</span>Support Settings</div>
+      <div class="sb-item" onclick="goPage('terms',this)"><span class="sb-ico">📜</span>Terms &amp; Conditions</div>
+
+      <div class="sb-grp">Activity</div>
+      <div class="sb-item" onclick="goPage('activity',this)"><span class="sb-ico">📡</span>Live Activity</div>
+    </nav>
+    <div class="sb-foot">
+      <div class="sb-admin">
+        <div class="sb-av">👑</div>
+        <div><div class="sb-aname">Admin</div><div class="sb-arole">● Online</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="topbar">
+      <div class="tb-left">
+        <div class="hamburger" onclick="toggleSb()"><div class="hline"></div><div class="hline"></div><div class="hline"></div></div>
+        <div class="pg-title" id="pg-title">Dashboard</div>
+      </div>
+      <div class="tb-right">
+        <div class="live-row"><div class="live-dot"></div><div class="live-lbl"><span id="live-n">0</span> Live</div></div>
+        <button class="tb-btn tb-icon-btn" onclick="loadAll()" title="Refresh">↻</button>
+        <button class="tb-btn tb-icon-btn" onclick="doLogout()" title="Sign Out">⏻</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ══ DASHBOARD ══ -->
+      <div class="pg-sec active" id="sec-dashboard">
+        <div class="stat-grid">
+          <div class="sc gr"><div class="sc-ico">👥</div><div class="sc-val" id="s-users">—</div><div class="sc-lbl">Total Users</div></div>
+          <div class="sc bl"><div class="sc-ico">📡</div><div class="sc-val" id="s-live">—</div><div class="sc-lbl">Live Now</div></div>
+          <div class="sc ye"><div class="sc-ico">☀️</div><div class="sc-val" id="s-today">—</div><div class="sc-lbl">Active Today</div></div>
+          <div class="sc or"><div class="sc-ico">🌙</div><div class="sc-val" id="s-yest">—</div><div class="sc-lbl">Active Yesterday</div></div>
+          <div class="sc pu"><div class="sc-ico">💸</div><div class="sc-val" id="s-pwd">—</div><div class="sc-lbl">Pending Withdrawals</div></div>
+          <div class="sc re"><div class="sc-ico">🪙</div><div class="sc-val" id="s-coins">—</div><div class="sc-lbl">Total Coins</div></div>
+          <div class="sc gr"><div class="sc-ico">🎮</div><div class="sc-val" id="s-gc">—</div><div class="sc-lbl">Gift Card Orders</div></div>
+          <div class="sc bl"><div class="sc-ico">🔗</div><div class="sc-val" id="s-refs">—</div><div class="sc-lbl">Total Referrals</div></div>
+        </div>
+        <div class="sec-hdr">
+          <div class="sec-ttl"><span>💸</span>Recent Withdrawals</div>
+          <button class="tb-btn" onclick="goPage('withdrawals',document.querySelector('[onclick*=withdrawals]'))">View All →</button>
+        </div>
+        <div class="tbl-wrap"><table><thead><tr>
+          <th>User ID</th><th>Method</th><th>Coins</th><th>Rupees</th><th>Status</th><th>Date</th><th>Actions</th>
+        </tr></thead><tbody id="dash-wd-tb"></tbody></table></div>
+      </div>
+
+      <!-- ══ USERS ══ -->
+      <div class="pg-sec" id="sec-users">
+        <div class="sec-hdr">
+          <div class="sec-ttl"><span>👥</span>All Users</div>
+          <button class="tb-btn accent" onclick="exportCSV()">⬇ Export CSV</button>
+        </div>
+        <div class="tbl-wrap">
+          <div class="tbl-filters">
+            <input class="f-input" placeholder="🔍 Search by UID..." id="u-search" oninput="filterUsers()"/>
+            <select class="f-sel" id="u-filter" onchange="filterUsers()">
+              <option value="">All Users</option>
+              <option value="today">Active Today</option>
+              <option value="blocked">Blocked</option>
+            </select>
+          </div>
+          <table><thead><tr>
+            <th>Telegram UID</th><th>Coins</th><th>Ads Today</th><th>Referrals</th><th>Streak</th><th>Last Active</th><th>Status</th><th>Actions</th>
+          </tr></thead><tbody id="u-tb"></tbody></table>
+        </div>
+      </div>
+
+      <!-- ══ WITHDRAWALS ══ -->
+      <div class="pg-sec" id="sec-withdrawals">
+        <div class="sec-hdr">
+          <div class="sec-ttl"><span>💸</span>Withdrawal Requests</div>
+          <select class="f-sel" id="wd-filter" onchange="renderWd()">
+            <option value="">All</option><option value="pending">Pending</option>
+            <option value="approved">Approved</option><option value="rejected">Rejected</option>
+          </select>
+        </div>
+        <div class="tbl-wrap"><table><thead><tr>
+          <th>User ID</th><th>Method</th><th>Payment Details</th><th>Coins</th><th>Rupees</th><th>Status</th><th>Date</th><th>Actions</th>
+        </tr></thead><tbody id="wd-tb"></tbody></table></div>
+      </div>
+
+      <!-- ══ GIFT CARDS ══ -->
+      <div class="pg-sec" id="sec-giftcards">
+        <div class="sec-hdr">
+          <div class="sec-ttl"><span>🎮</span>Gift Card Orders</div>
+          <select class="f-sel" id="gc-filter" onchange="renderGc()">
+            <option value="">All</option><option value="pending">Pending</option>
+            <option value="sent">Sent</option><option value="rejected">Rejected</option>
+          </select>
+        </div>
+        <div class="tbl-wrap"><table><thead><tr>
+          <th>User ID</th><th>Card Value</th><th>Coins</th><th>WhatsApp</th><th>Email</th><th>Status</th><th>Date</th><th>Actions</th>
+        </tr></thead><tbody id="gc-tb"></tbody></table></div>
+      </div>
+
+      <!-- ══ BROADCAST ══ -->
+      <div class="pg-sec" id="sec-broadcast">
+        <div class="fc">
+          <div class="fc-ttl"><span>📢</span>Send Broadcast Message</div>
+          <div class="form-grid s1">
+            <div class="fg"><label>Message Title</label><input id="bc-ttl" placeholder="e.g. 🔥 New Feature Alert!"/></div>
+            <div class="fg"><label>Message Body</label><textarea id="bc-body" placeholder="Write your message here..."></textarea></div>
+            <div class="fg">
+              <label>Tag</label>
+              <div class="bc-tags">
+                <div class="bc-tag on" onclick="pickTag(this,'update')">📅 Update</div>
+                <div class="bc-tag" onclick="pickTag(this,'alert')">🔔 Alert</div>
+                <div class="bc-tag" onclick="pickTag(this,'reward')">🎁 Reward</div>
+                <div class="bc-tag" onclick="pickTag(this,'system')">⚙️ System</div>
+                <div class="bc-tag" onclick="pickTag(this,'promo')">🚀 Promo</div>
+              </div>
+            </div>
+          </div>
+          <button class="sbtn" style="margin-top:12px" onclick="sendBc()">📢 Send to All Users</button>
+        </div>
+        <div class="sec-hdr"><div class="sec-ttl"><span>📋</span>Sent Broadcasts</div></div>
+        <div id="bc-list"></div>
+      </div>
+
+      <!-- ══ SUPPORT ══ -->
+      <div class="pg-sec" id="sec-support">
+        <div class="fc">
+          <div class="fc-ttl"><span>🎧</span>Support Contact Settings</div>
+          <div class="form-grid">
+            <div class="fg">
+              <label>Telegram Username / ID</label>
+              <input id="sup-tg" placeholder="e.g. @sparkearncoin_support"/>
+              <div class="hint">Users will message this account for support</div>
+            </div>
+            <div class="fg">
+              <label>Telegram Channel Link</label>
+              <input id="sup-ch" placeholder="https://t.me/sparkearncoin_channel"/>
+            </div>
+            <div class="fg">
+              <label>Response Time Note</label>
+              <input id="sup-rt" placeholder="e.g. We respond within 24–48 hours"/>
+            </div>
+            <div class="fg">
+              <label>Support Email (Optional)</label>
+              <input type="email" id="sup-em" placeholder="support@example.com"/>
+            </div>
+          </div>
+          <div class="fg" style="margin-top:14px">
+            <label>FAQ — one per line</label>
+            <textarea id="sup-faq" placeholder="Withdrawals take 24–48 hours&#10;Minimum withdrawal is 10,000 coins&#10;20 coins = ₹1"></textarea>
+          </div>
+          <button class="sbtn" style="margin-top:16px" onclick="saveSup()">💾 Save Support Settings</button>
+        </div>
+        <div class="fc" id="sup-cur-card" style="display:none">
+          <div class="fc-ttl"><span>👁</span>Currently Saved</div>
+          <div id="sup-cur"></div>
+        </div>
+      </div>
+
+      <!-- ══ TERMS ══ -->
+      <div class="pg-sec" id="sec-terms">
+        <div class="sec-hdr">
+          <div class="sec-ttl"><span>📜</span>Terms &amp; Conditions Editor</div>
+          <div style="display:flex;gap:8px">
+            <button class="tb-btn accent" onclick="addTSection()">+ Add Section</button>
+            <button class="sbtn" style="padding:8px 18px;font-size:12px" onclick="saveTerms()">💾 Save All</button>
+          </div>
+        </div>
+        <div id="terms-list"></div>
+      </div>
+
+      <!-- ══ ACTIVITY ══ -->
+      <div class="pg-sec" id="sec-activity">
+        <div class="stat-grid">
+          <div class="sc bl"><div class="sc-ico">📡</div><div class="sc-val" id="a-live">—</div><div class="sc-lbl">Live Right Now</div></div>
+          <div class="sc gr"><div class="sc-ico">☀️</div><div class="sc-val" id="a-today">—</div><div class="sc-lbl">Active Today</div></div>
+          <div class="sc ye"><div class="sc-ico">🌙</div><div class="sc-val" id="a-yest">—</div><div class="sc-lbl">Active Yesterday</div></div>
+          <div class="sc pu"><div class="sc-ico">📅</div><div class="sc-val" id="a-week">—</div><div class="sc-lbl">Active Last 7 Days</div></div>
+        </div>
+        <div class="sec-hdr">
+          <div class="sec-ttl"><span>🕐</span>Activity Feed (Top 50 by Coins)</div>
+          <button class="tb-btn" onclick="loadActivity()">↻ Refresh</button>
+        </div>
+        <div class="tbl-wrap"><table><thead><tr>
+          <th>User ID</th><th>Coins</th><th>Ads Today</th><th>Last Reset</th><th>Streak</th><th>Referrals</th><th>Status</th>
+        </tr></thead><tbody id="act-tb"></tbody></table></div>
+      </div>
+
+    </div><!-- /content -->
+  </main>
+</div>
+
+<!-- USER MODAL -->
+<div class="modal-bg" id="uModal">
+  <div class="modal">
+    <div class="modal-hd"><div class="modal-hd-ttl">👤 User Details</div><div class="modal-x" onclick="closeM('uModal')">✕</div></div>
+    <div class="modal-bd" id="u-modal-bd"></div>
+  </div>
+</div>
+
+<!-- WD MODAL -->
+<div class="modal-bg" id="wdModal">
+  <div class="modal">
+    <div class="modal-hd"><div class="modal-hd-ttl">💸 Withdrawal Details</div><div class="modal-x" onclick="closeM('wdModal')">✕</div></div>
+    <div class="modal-bd" id="wd-modal-bd"></div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ──────────────────────────────
+const ADMIN_PASS = "SparkEarn@Admin2025#"; // Admin Panel Password
+const LIVE_MS    = 5 * 60 * 1000;     // 5 minutes = live
+
+// ── DATA ────────────────────────────────
+let USERS = [], WDS = [], GCS = [];
+let BC_TAG = "update", TERMS = [];
+
+// ── UTILS ───────────────────────────────
+function todayKey(){return new Date().toLocaleString("en-CA",{timeZone:"Asia/Kolkata"}).split(",")[0].trim()}
+function yesterdayKey(){const d=new Date();d.setDate(d.getDate()-1);return d.toLocaleString("en-CA",{timeZone:"Asia/Kolkata"}).split(",")[0].trim()}
+function fmtDate(iso){if(!iso)return"—";try{return new Date(iso).toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})}catch{return iso}}
+function fmtN(n){return Number(n||0).toLocaleString("en-IN")}
+
+function toast(msg,type="inf"){
+  const w=document.getElementById("toast-wrap");
+  const d=document.createElement("div");
+  d.className="toast "+type;
+  const ic={ok:"✅",err:"❌",inf:"ℹ️"};
+  d.innerHTML=`<span>${ic[type]||"ℹ️"}</span><span>${msg}</span>`;
+  w.appendChild(d);
+  setTimeout(()=>d.remove(),3500);
+}
+
+// ── AUTH ────────────────────────────────
+function doLogin(){
+  if(document.getElementById("l-pass").value===ADMIN_PASS){
+    document.getElementById("login").style.display="none";
+    document.getElementById("wrap").style.display="flex";
+    sessionStorage.setItem("adm","1");
+    loadAll();
+  } else {
+    document.getElementById("l-err").textContent="❌ Wrong password";
+  }
+}
+function doLogout(){sessionStorage.removeItem("adm");location.reload()}
+if(sessionStorage.getItem("adm")==="1"){
+  document.getElementById("login").style.display="none";
+  document.getElementById("wrap").style.display="flex";
+}
+
+// ── NAV ─────────────────────────────────
+const PG_TITLES={dashboard:"Dashboard",users:"All Users",withdrawals:"Withdrawals",giftcards:"Gift Card Orders",broadcast:"Broadcast",support:"Support Settings",terms:"Terms & Conditions",activity:"Live Activity"};
+function goPage(name,el){
+  document.querySelectorAll(".pg-sec").forEach(s=>s.classList.remove("active"));
+  document.querySelectorAll(".sb-item").forEach(s=>s.classList.remove("active"));
+  document.getElementById("sec-"+name).classList.add("active");
+  if(el)el.classList.add("active");
+  document.getElementById("pg-title").textContent=PG_TITLES[name]||name;
+  closeSb();
+  if(name==="activity")loadActivity();
+  if(name==="support")loadSup();
+  if(name==="terms")loadTerms();
+  if(name==="broadcast")loadBcs();
+}
+function toggleSb(){document.getElementById("sidebar").classList.toggle("open");document.getElementById("overlay").classList.toggle("show")}
+function closeSb(){document.getElementById("sidebar").classList.remove("open");document.getElementById("overlay").classList.remove("show")}
+function openM(id){document.getElementById(id).classList.add("open")}
+function closeM(id){document.getElementById(id).classList.remove("open")}
+
+// ── LOAD ALL ────────────────────────────
+async function loadAll(){
+  if(!window._db){toast("Firebase not ready","err");return}
+  try{
+    const snap=await window._getDocs(window._collection(window._db,"users"));
+    USERS=snap.docs.map(d=>({uid:d.id,...d.data()}));
+    buildDerived();
+    renderDash();renderWd();renderGc();renderUsers();updateLive();
+    toast("Loaded "+USERS.length+" users","ok");
+  }catch(e){toast("Load error: "+e.message,"err");console.error(e)}
+}
+
+function buildDerived(){
+  WDS=[];GCS=[];
+  USERS.forEach(u=>{
+    (u.withdrawHistory||[]).forEach((w,i)=>WDS.push({...w,uid:u.uid,_i:i}));
+    (u.storeOrders||[]).forEach((g,i)=>GCS.push({...g,uid:u.uid,_i:i}));
+  });
+  WDS.sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));
+  GCS.sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));
+  const pw=WDS.filter(w=>w.status==="pending").length;
+  const pg=GCS.filter(g=>g.status==="pending").length;
+  const wb=document.getElementById("wd-badge");if(wb){wb.textContent=pw;wb.style.display=pw?"inline":"none"}
+  const gb=document.getElementById("gc-badge");if(gb){gb.textContent=pg;gb.style.display=pg?"inline":"none"}
+}
+
+function isLive(u){if(!u.lastActive)return false;return(Date.now()-new Date(u.lastActive))<LIVE_MS}
+function isToday(u){return u.lastReset===todayKey()&&(u.totalAdsToday||0)>0}
+function isYest(u){return u.lastReset===yesterdayKey()}
+
+function updateLive(){
+  const n=USERS.filter(isLive).length;
+  document.getElementById("live-n").textContent=n;
+  document.getElementById("s-live").textContent=n;
+  const al=document.getElementById("a-live");if(al)al.textContent=n;
+}
+setInterval(updateLive,30000);
+
+// ── DASHBOARD ───────────────────────────
+function renderDash(){
+  const today=USERS.filter(isToday).length;
+  const yest=USERS.filter(isYest).length;
+  const pw=WDS.filter(w=>w.status==="pending").length;
+  const tc=USERS.reduce((a,u)=>a+(u.coins||0),0);
+  const tr=USERS.reduce((a,u)=>a+(u.referrals||0),0);
+  document.getElementById("s-users").textContent=fmtN(USERS.length);
+  document.getElementById("s-today").textContent=today;
+  document.getElementById("s-yest").textContent=yest;
+  document.getElementById("s-pwd").textContent=pw;
+  document.getElementById("s-coins").textContent=fmtN(tc);
+  document.getElementById("s-gc").textContent=GCS.length;
+  document.getElementById("s-refs").textContent=tr;
+  const tb=document.getElementById("dash-wd-tb");
+  const list=WDS.slice(0,10);
+  if(!list.length){tb.innerHTML=`<tr><td colspan="7"><div class="empty"><div class="ei">💸</div><p>No withdrawals yet</p></div></td></tr>`;return}
+  tb.innerHTML=list.map(w=>`<tr>
+    <td class="mono">${w.uid}</td>
+    <td><span class="bdg ${(w.method||"").toLowerCase()}">${w.method||"—"}</span></td>
+    <td class="bold mono">${fmtN(w.amount)}</td>
+    <td style="color:var(--green)">₹${w.rupees||"—"}</td>
+    <td><span class="bdg ${w.status}">${w.status}</span></td>
+    <td class="mono" style="font-size:10px">${fmtDate(w.date)}</td>
+    <td style="display:flex;gap:4px">
+      ${w.status==="pending"
+        ?`<button class="ab ok" onclick="updWd('${w.uid}',${w._i},'approved')">✓</button><button class="ab no" onclick="updWd('${w.uid}',${w._i},'rejected')">✗</button>`
+        :`<span class="bdg ${w.status}">${w.status}</span>`}
+    </td>
+  </tr>`).join("");
+}
+
+// ── USERS ───────────────────────────────
+let _fu=[];
+function renderUsers(){_fu=[...USERS];paintUsers()}
+function filterUsers(){
+  const q=(document.getElementById("u-search").value||"").toLowerCase();
+  const f=document.getElementById("u-filter").value;
+  _fu=USERS.filter(u=>{
+    if(q&&!u.uid.toLowerCase().includes(q))return false;
+    if(f==="today"&&!isToday(u))return false;
+    if(f==="blocked"&&!u.blocked)return false;
+    return true;
+  });
+  paintUsers();
+}
+function paintUsers(){
+  const tb=document.getElementById("u-tb");
+  if(!_fu.length){tb.innerHTML=`<tr><td colspan="8"><div class="empty"><div class="ei">👥</div><p>No users found</p></div></td></tr>`;return}
+  tb.innerHTML=_fu.map(u=>`<tr>
+    <td class="mono">${u.uid}</td>
+    <td class="bold mono" style="color:var(--yellow)">${fmtN(u.coins)}</td>
+    <td>${u.totalAdsToday||0}/100</td>
+    <td>${u.referrals||0}</td>
+    <td>${u.checkinStreak||0} 🔥</td>
+    <td class="mono" style="font-size:10px">${u.lastReset||"—"}</td>
+    <td>${isLive(u)?'<span class="bdg online">● Live</span>':isToday(u)?'<span class="bdg active">Today</span>':'<span style="color:var(--text3);font-size:11px">—</span>'}</td>
+    <td style="display:flex;gap:4px;flex-wrap:wrap">
+      <button class="ab vw" onclick="viewUser('${u.uid}')">👁 View</button>
+      ${u.blocked?`<button class="ab ok" onclick="toggleBlock('${u.uid}',false)">Unblock</button>`:`<button class="ab no" onclick="toggleBlock('${u.uid}',true)">Block</button>`}
+    </td>
+  </tr>`).join("");
+}
+function exportCSV(){
+  const rows=[["UID","Coins","AdsToday","Referrals","Streak","LastReset","ReferCode","ReferredBy","Blocked"]];
+  USERS.forEach(u=>rows.push([u.uid,u.coins||0,u.totalAdsToday||0,u.referrals||0,u.checkinStreak||0,u.lastReset||"",u.referCode||"",u.referredBy||"",u.blocked?"yes":"no"]));
+  const csv=rows.map(r=>r.join(",")).join("\n");
+  const a=document.createElement("a");
+  a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);
+  a.download="sparkearncoin_users_"+Date.now()+".csv";
+  a.click();toast("CSV exported","ok");
+}
+function viewUser(uid){
+  const u=USERS.find(x=>x.uid===uid);if(!u)return;
+  document.getElementById("u-modal-bd").innerHTML=`
+    <div class="ud-grid">
+      <div class="ud-c"><div class="ud-l">Telegram UID</div><div class="ud-v" style="font-size:11px">${u.uid}</div></div>
+      <div class="ud-c"><div class="ud-l">Coins</div><div class="ud-v ye">${fmtN(u.coins)}</div></div>
+      <div class="ud-c"><div class="ud-l">Referrals</div><div class="ud-v gr">${u.referrals||0}</div></div>
+      <div class="ud-c"><div class="ud-l">Referral Coins</div><div class="ud-v">${fmtN(u.referCoins)}</div></div>
+      <div class="ud-c"><div class="ud-l">Ads Today</div><div class="ud-v">${u.totalAdsToday||0}/100</div></div>
+      <div class="ud-c"><div class="ud-l">Streak</div><div class="ud-v">${u.checkinStreak||0} 🔥</div></div>
+      <div class="ud-c"><div class="ud-l">Withdrawals</div><div class="ud-v">${(u.withdrawHistory||[]).length}</div></div>
+      <div class="ud-c"><div class="ud-l">Gift Orders</div><div class="ud-v">${(u.storeOrders||[]).length}</div></div>
+    </div>
+    <div class="mrow"><span class="mrow-lbl">Referral Code</span><span class="mrow-val">${u.referCode||"—"}</span></div>
+    <div class="mrow"><span class="mrow-lbl">Referred By</span><span class="mrow-val">${u.referredBy||"None"}</span></div>
+    <div class="mrow"><span class="mrow-lbl">Referral Credited</span><span class="mrow-val">${u.referralCredited?"✅ Yes":"⏳ No"}</span></div>
+    <div class="mrow"><span class="mrow-lbl">Last Check-in</span><span class="mrow-val">${u.lastCheckin||"—"}</span></div>
+    <div class="mrow"><span class="mrow-lbl">Status</span><span class="mrow-val">${u.blocked?'<span class="bdg rejected">Blocked</span>':'<span class="bdg active">Active</span>'}</span></div>
+    <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
+      ${u.blocked?`<button class="ab ok" onclick="toggleBlock('${uid}',false);closeM('uModal')">✓ Unblock</button>`:`<button class="ab no" onclick="toggleBlock('${uid}',true);closeM('uModal')">⛔ Block</button>`}
+      <button class="ab pu" onclick="adjCoins('${uid}')">🪙 Adjust Coins</button>
+    </div>`;
+  openM("uModal");
+}
+async function toggleBlock(uid,block){
+  try{
+    await window._updateDoc(window._doc(window._db,"users",uid),{blocked:block});
+    const u=USERS.find(x=>x.uid===uid);if(u)u.blocked=block;
+    paintUsers();
+    toast(block?"User blocked ⛔":"User unblocked ✓",block?"err":"ok");
+  }catch(e){toast("Error: "+e.message,"err")}
+}
+function adjCoins(uid){
+  const amt=prompt("Adjust coins for "+uid+"\n(positive = add, negative = deduct):");
+  if(amt===null)return;
+  const n=parseInt(amt);
+  if(isNaN(n)){toast("Invalid amount","err");return}
+  const u=USERS.find(x=>x.uid===uid);if(!u)return;
+  const nc=Math.max(0,(u.coins||0)+n);
+  window._updateDoc(window._doc(window._db,"users",uid),{coins:nc})
+    .then(()=>{u.coins=nc;toast(`${n>=0?"+":""}${n} coins → balance: ${nc}`,"ok");renderDash()})
+    .catch(e=>toast("Error: "+e.message,"err"));
+}
+
+// ── WITHDRAWALS ─────────────────────────
+function renderWd(){
+  const f=document.getElementById("wd-filter")?.value||"";
+  const list=f?WDS.filter(w=>w.status===f):WDS;
+  const tb=document.getElementById("wd-tb");
+  if(!list.length){tb.innerHTML=`<tr><td colspan="8"><div class="empty"><div class="ei">💸</div><p>No withdrawals</p></div></td></tr>`;return}
+  tb.innerHTML=list.map(w=>`<tr>
+    <td class="mono">${w.uid}</td>
+    <td><span class="bdg ${(w.method||"").toLowerCase()}">${w.method||"—"}</span></td>
+    <td class="mono" style="font-size:10px;max-width:140px;overflow:hidden;text-overflow:ellipsis">${w.method==="UPI"?(w.upiId||"—"):((w.bankName||"")+" "+(w.accountNumber||""))}</td>
+    <td class="bold mono">${fmtN(w.amount)}</td>
+    <td style="color:var(--green)">₹${w.rupees||"—"}</td>
+    <td><span class="bdg ${w.status}">${w.status}</span></td>
+    <td class="mono" style="font-size:10px">${fmtDate(w.date)}</td>
+    <td style="display:flex;gap:4px;flex-wrap:wrap">
+      <button class="ab vw" onclick="viewWd('${w.uid}',${w._i})">👁</button>
+      ${w.status==="pending"?`<button class="ab ok" onclick="updWd('${w.uid}',${w._i},'approved')">✓ Approve</button><button class="ab no" onclick="updWd('${w.uid}',${w._i},'rejected')">✗ Reject</button>`:""}
+    </td>
+  </tr>`).join("");
+}
+async function updWd(uid,idx,status){
+  try{
+    const u=USERS.find(x=>x.uid===uid);if(!u)return;
+    const h=[...(u.withdrawHistory||[])];
+    if(!h[idx])return;
+    h[idx]={...h[idx],status,reviewedAt:new Date().toISOString()};
+    await window._updateDoc(window._doc(window._db,"users",uid),{withdrawHistory:h});
+    u.withdrawHistory=h;buildDerived();renderWd();renderDash();
+    toast("Withdrawal "+status+" ✓",status==="approved"?"ok":"inf");
+  }catch(e){toast("Error: "+e.message,"err")}
+}
+function viewWd(uid,idx){
+  const w=WDS.find(x=>x.uid===uid&&x._i===idx);if(!w)return;
+  const skip=["uid","_i"];
+  document.getElementById("wd-modal-bd").innerHTML=`
+    <div class="mrow"><span class="mrow-lbl">User ID</span><span class="mrow-val">${uid}</span></div>
+    ${Object.entries(w).filter(([k])=>!skip.includes(k)).map(([k,v])=>`
+      <div class="mrow"><span class="mrow-lbl">${k}</span><span class="mrow-val">${v||"—"}</span></div>`).join("")}
+    ${w.status==="pending"?`<div style="display:flex;gap:8px;margin-top:16px">
+      <button class="ab ok" onclick="updWd('${uid}',${idx},'approved');closeM('wdModal')">✓ Approve</button>
+      <button class="ab no" onclick="updWd('${uid}',${idx},'rejected');closeM('wdModal')">✗ Reject</button>
+    </div>`:""}`;
+  openM("wdModal");
+}
+
+// ── GIFT CARDS ──────────────────────────
+function renderGc(){
+  const f=document.getElementById("gc-filter")?.value||"";
+  const list=f?GCS.filter(g=>g.status===f):GCS;
+  const tb=document.getElementById("gc-tb");
+  if(!list.length){tb.innerHTML=`<tr><td colspan="8"><div class="empty"><div class="ei">🎮</div><p>No gift card orders</p></div></td></tr>`;return}
+  tb.innerHTML=list.map(g=>`<tr>
+    <td class="mono">${g.uid}</td>
+    <td class="bold" style="color:var(--yellow)">${g.cardValue}</td>
+    <td class="mono">${fmtN(g.coins)}</td>
+    <td class="mono">${g.phone||"—"}</td>
+    <td class="mono" style="font-size:10px">${g.email||"—"}</td>
+    <td><span class="bdg ${g.status==="sent"?"sent":g.status}">${g.status}</span></td>
+    <td class="mono" style="font-size:10px">${fmtDate(g.date)}</td>
+    <td style="display:flex;gap:4px;flex-wrap:wrap">
+      ${g.status==="pending"?`<button class="ab ok" onclick="updGc('${g.uid}',${g._i},'sent')">✓ Sent</button><button class="ab no" onclick="updGc('${g.uid}',${g._i},'rejected')">✗ Reject</button>`:`<span class="bdg ${g.status==="sent"?"sent":"rejected"}">${g.status}</span>`}
+    </td>
+  </tr>`).join("");
+}
+async function updGc(uid,idx,status){
+  try{
+    const u=USERS.find(x=>x.uid===uid);if(!u)return;
+    const o=[...(u.storeOrders||[])];
+    if(!o[idx])return;
+    o[idx]={...o[idx],status,updatedAt:new Date().toISOString()};
+    await window._updateDoc(window._doc(window._db,"users",uid),{storeOrders:o});
+    u.storeOrders=o;buildDerived();renderGc();
+    toast("Gift card "+status+" ✓",status==="sent"?"ok":"inf");
+  }catch(e){toast("Error: "+e.message,"err")}
+}
+
+// ── BROADCAST ───────────────────────────
+function pickTag(el,tag){document.querySelectorAll(".bc-tag").forEach(e=>e.classList.remove("on"));el.classList.add("on");BC_TAG=tag}
+async function sendBc(){
+  const title=document.getElementById("bc-ttl").value.trim();
+  const body=document.getElementById("bc-body").value.trim();
+  if(!title||!body){toast("Title and body required","err");return}
+  try{
+    await window._addDoc(window._collection(window._db,"broadcasts"),{title,body,tag:BC_TAG,createdAt:new Date().toISOString()});
+    document.getElementById("bc-ttl").value="";
+    document.getElementById("bc-body").value="";
+    toast("📢 Broadcast sent!","ok");loadBcs();
+  }catch(e){toast("Error: "+e.message,"err")}
+}
+async function loadBcs(){
+  try{
+    const snap=await window._getDocs(window._collection(window._db,"broadcasts"));
+    const msgs=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
+    const tc={update:"var(--blue)",alert:"var(--red)",reward:"var(--yellow)",system:"var(--text2)",promo:"var(--green)"};
+    const el=document.getElementById("bc-list");
+    if(!msgs.length){el.innerHTML=`<div class="empty"><div class="ei">📢</div><p>No broadcasts yet</p></div>`;return}
+    el.innerHTML=msgs.map(m=>`
+      <div class="fc" style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+          <div style="font-size:13px;font-weight:700">${m.title}</div>
+          <div style="display:flex;gap:6px">
+            <span class="bdg pending" style="border-color:${tc[m.tag]||"var(--border)"};color:${tc[m.tag]||"var(--text2)"}">${m.tag||"update"}</span>
+            <button class="ab no" onclick="delBc('${m.id}')">🗑</button>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:6px">${m.body}</div>
+        <div style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace">${fmtDate(m.createdAt)}</div>
+      </div>`).join("");
+  }catch(e){toast("Error loading broadcasts","err")}
+}
+async function delBc(id){
+  if(!confirm("Delete this broadcast?"))return;
+  try{await window._deleteDoc(window._doc(window._db,"broadcasts",id));toast("Deleted","inf");loadBcs()}
+  catch(e){toast("Error: "+e.message,"err")}
+}
+
+// ── SUPPORT ─────────────────────────────
+async function loadSup(){
+  try{
+    const snap=await window._getDoc(window._doc(window._db,"config","support"));
+    if(!snap.exists())return;
+    const d=snap.data();
+    document.getElementById("sup-tg").value=d.tgUser||"";
+    document.getElementById("sup-ch").value=d.tgChannel||"";
+    document.getElementById("sup-rt").value=d.responseTime||"";
+    document.getElementById("sup-em").value=d.email||"";
+    document.getElementById("sup-faq").value=(d.faq||[]).join("\n");
+    const cc=document.getElementById("sup-cur-card");
+    const sc=document.getElementById("sup-cur");
+    cc.style.display="block";
+    sc.innerHTML=Object.entries(d).map(([k,v])=>`<div class="mrow"><span class="mrow-lbl">${k}</span><span class="mrow-val" style="font-size:12px">${Array.isArray(v)?v.join(" | "):v}</span></div>`).join("");
+  }catch(e){}
+}
+async function saveSup(){
+  const data={
+    tgUser:document.getElementById("sup-tg").value.trim(),
+    tgChannel:document.getElementById("sup-ch").value.trim(),
+    responseTime:document.getElementById("sup-rt").value.trim(),
+    email:document.getElementById("sup-em").value.trim(),
+    faq:document.getElementById("sup-faq").value.split("\n").map(l=>l.trim()).filter(Boolean),
+    updatedAt:new Date().toISOString()
+  };
+  try{
+    await window._setDoc(window._doc(window._db,"config","support"),data);
+    toast("Support settings saved ✓","ok");loadSup();
+  }catch(e){toast("Error: "+e.message,"err")}
+}
+
+// ── TERMS ───────────────────────────────
+const DEF_TERMS=[
+  {title:"📌 General Rules",content:"You must be 18 years or older to use this platform.\nOne account per person. Multiple accounts result in permanent ban.\nFraudulent activity results in permanent ban and coin forfeiture."},
+  {title:"📺 Ad Watching Rules",content:"Each task button has 5 ads per cycle.\nOne mandatory ad click per cycle is required.\nAfter clicking, you must stay on the ad for at least 15 seconds.\nBots or automation tools result in immediate ban."},
+  {title:"💸 Withdrawal Policy",content:"Minimum withdrawal: 10,000 coins (₹500).\nProcessing time: 24–48 hours.\nCorrect payment details are mandatory. We are not liable for wrong info.\nWithdrawals may be blocked if suspicious activity is detected."},
+  {title:"🔒 VPN & IP Policy",content:"VPN use during withdrawal = automatic block.\nMultiple Telegram accounts on same IP/device = permanent withdrawal block.\nSPARK EARN monitors IP, device fingerprints, and Telegram data."},
+  {title:"👥 Referral Policy",content:"1,000 coins per successful referral.\nReferral credited only on friend's first withdrawal.\nSelf-referrals and fake referrals result in account suspension."},
+  {title:"⚠️ Disclaimer",content:"Earnings are not guaranteed. We reserve the right to change rules at any time without prior notice."},
+];
+async function loadTerms(){
+  try{
+    const snap=await window._getDoc(window._doc(window._db,"config","terms"));
+    TERMS=snap.exists()?(snap.data().sections||[...DEF_TERMS]):[...DEF_TERMS];
+  }catch(e){TERMS=[...DEF_TERMS]}
+  paintTerms();
+}
+function paintTerms(){
+  document.getElementById("terms-list").innerHTML=TERMS.map((s,i)=>`
+    <div class="tblk">
+      <div class="tblk-hd">
+        <input class="tblk-input" value="${s.title.replace(/"/g,'&quot;')}" oninput="TERMS[${i}].title=this.value"/>
+        <button class="ab no" onclick="rmTSection(${i})">🗑 Remove</button>
+      </div>
+      <textarea class="tblk-ta" oninput="TERMS[${i}].content=this.value">${s.content}</textarea>
+    </div>`).join("");
+}
+function addTSection(){TERMS.push({title:"📝 New Section",content:""});paintTerms()}
+function rmTSection(i){if(!confirm("Remove this section?"))return;TERMS.splice(i,1);paintTerms()}
+async function saveTerms(){
+  try{
+    await window._setDoc(window._doc(window._db,"config","terms"),{sections:TERMS,updatedAt:new Date().toISOString()});
+    toast("Terms saved ✓","ok");
+  }catch(e){toast("Error: "+e.message,"err")}
+}
+
+// ── ACTIVITY ────────────────────────────
+function loadActivity(){
+  const today=todayKey(),yest=yesterdayKey();
+  const live=USERS.filter(isLive).length;
+  const act=USERS.filter(isToday).length;
+  const yAct=USERS.filter(isYest).length;
+  const w7=USERS.filter(u=>{if(!u.lastReset)return false;return(Date.now()-new Date(u.lastReset+"T00:00:00+05:30"))<7*864e5}).length;
+  document.getElementById("a-live").textContent=live;
+  document.getElementById("a-today").textContent=act;
+  document.getElementById("a-yest").textContent=yAct;
+  document.getElementById("a-week").textContent=w7;
+  const sorted=[...USERS].sort((a,b)=>(b.coins||0)-(a.coins||0)).slice(0,50);
+  document.getElementById("act-tb").innerHTML=sorted.map(u=>`<tr>
+    <td class="mono">${u.uid}${isLive(u)?' <span class="bdg online">●Live</span>':""}</td>
+    <td class="bold mono" style="color:var(--yellow)">${fmtN(u.coins)}</td>
+    <td>${u.totalAdsToday||0}/100</td>
+    <td class="mono" style="font-size:10px">${u.lastReset||"—"}</td>
+    <td>${u.checkinStreak||0} 🔥</td>
+    <td>${u.referrals||0}</td>
+    <td>${isToday(u)?'<span class="bdg active">Today</span>':isYest(u)?'<span class="bdg pending">Yesterday</span>':'<span style="color:var(--text3);font-size:11px">Inactive</span>'}</td>
+  </tr>`).join("");
+  toast("Activity refreshed","inf");
+}
+
+// ── FIREBASE READY ──────────────────────
+window.addEventListener("firebase-ready",()=>{if(sessionStorage.getItem("adm")==="1")loadAll()});
+if(window._db&&sessionStorage.getItem("adm")==="1")setTimeout(loadAll,500);
+</script>
+</body>
+</html>
